@@ -1,0 +1,335 @@
+' create a new instance of Voxler.
+Function VoxlerApplication()
+   On Error Resume Next
+   Set VoxlerApplication = GetObject(, "Voxler.Application")
+   If Err.Number <> 0 Then
+      Set VoxlerApplication = CreateObject("Voxler.Application")
+   End If
+   On Error GoTo 0
+End Function
+
+Sub Main
+ 'Retrieve running instance of Voxler or create a new instance of Voxler
+  Dim VoxlerApp As Object
+  Set VoxlerApp = VoxlerApplication()
+
+ 'Make Voxler visible
+  VoxlerApp.Visible = True
+
+ 'Access CommandApi
+  Set CommandApi = VoxlerApp.CommandApi
+
+'Create a new Voxler document
+  CommandApi.Construct ("New")
+  CommandApi.DoOnce()
+
+  Dim Fpath$
+  Fpath = "\\isgs-sinkhole\geophysics\cassava\2018\Run3_Sept17-19\ProcessedData\FinalFiles\" 'File path here
+  Dim Fname$
+  Dim Pname$
+  Dim rSqaured$
+  'Dim PlantLocs(3,7)$
+  Dim PlantXLoc()
+  Dim PlantYLoc()
+
+'****************************************************
+'*****RENAME THESE VARIABLES***********
+  Fname = "19b3_3D_trim_depth.txt" 'File name here
+  Pname = "19b3_XY.txt" 'File name for plant location file
+  PlantXLoc = Array("1.234","1.234","1.242","1.244","0.579","0.618","0.594","0.594")
+  PlantYLoc = Array("2.773","2.146","1.465","0.815","0.85","1.529","2.183","2.851")
+'******ADJUST AS NEEDED********************
+   rSquared = "0.15" ' Make a circle just over 0.75m radius, or distance b/w plants (0.14 is exact, but 0.15 allows X-Cut to work
+'****************************************************
+'****************************************************
+
+ 'Load the data file
+  CommandApi.Construct("Import")
+  CommandApi.Option("AutoConnect", "False")
+  CommandApi.Option ("Path", Fpath+Fname)
+  CommandApi.Option ("Filter", "txt")
+  CommandApi.Option ("Options", "Delimiter=comma;TextQualifier=doublequote,quote")
+  CommandApi.Option ("GuiEnabled", "False")
+  CommandApi.Do()
+
+  'Change XYZ Column to 2,3,4
+	  CommandApi.Construct("ModifyModule")
+	  CommandApi.Option("Module",Fname)
+	  CommandApi.Option("ColComponent-1","4")
+	  CommandApi.Do()
+
+  'Create a scatter plot of all data
+  CommandApi.Construct ("CreateModule")
+  CommandApi.Option ("Type", "ScatterPlot")
+  CommandApi.Option ("AutoConnect", "True")
+  CommandApi.Option ("SourceModule", Fname)
+  CommandApi.Do()
+
+			 'Rename Scatter Plot
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","ScatterPlot")
+			  CommandApi.Option ("Name", "AllDataPlot")
+			  CommandApi.Do()
+
+  			  'Move Scatter Plot module box
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","AllDataPlot")
+			  CommandApi.Option ("XPosition", "200")
+			  CommandApi.Option ("YPosition", "40")
+			  CommandApi.Do()
+
+ 'Load the plant location file
+  CommandApi.Construct("Import")
+  CommandApi.Option("AutoConnect", "False")
+  CommandApi.Option ("Path", Fpath+Pname)
+  CommandApi.Option ("Filter", "txt")
+  CommandApi.Option ("Options", "Delimiter=Space,tab;TextQualifier=doublequote,quote")
+  CommandApi.Option ("GuiEnabled", "False")
+  CommandApi.Option("StartRow","2")
+  CommandApi.Option("EatWhiteSpace","1")
+  CommandApi.Option("SkipExtraDelimiters","1")
+  CommandApi.Do()
+
+  'Change XYZ Column to 2,3,4
+	  CommandApi.Construct("ModifyModule")
+	  CommandApi.Option("Module",Pname)
+	  CommandApi.Option("PtColX","2")
+	  CommandApi.Option("PtColY","3")
+	  CommandApi.Option("PtColZ","4")
+	  CommandApi.Do()
+
+  'Create a scatter plot with the Plant Locations
+  CommandApi.Construct ("CreateModule")
+  CommandApi.Option ("Type", "ScatterPlot")
+  CommandApi.Option ("AutoConnect", "True")
+  CommandApi.Option ("SourceModule", Pname)
+  CommandApi.Do()
+
+			 'Rename Scatter Plot
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","ScatterPlot")
+			  CommandApi.Option ("Name", "PlantLocs")
+			  CommandApi.Do()
+
+  			  'Move Axis module box
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","PlantLocs")
+			  CommandApi.Option ("XPosition", "200")
+			  CommandApi.Option ("YPosition","70")
+			  CommandApi.Do()
+
+  'Create axes for Plant data
+  CommandApi.Construct ("CreateModule")
+  CommandApi.Option ("Type", "Axes")
+  CommandApi.Option ("SourceModule", Pname)
+  CommandApi.Option ("AutoConnect", "True")
+  CommandApi.Do()
+
+  CommandApi.Construct ("ModifyModule")
+  CommandApi.Option("Module", "Axes")
+  'X-axis
+  CommandApi.Option("AxesXAxisBeg",0)
+  CommandApi.Option("AxesXAxisEnd",2)
+  CommandApi.Option("AxesXAxisCross1", 0)
+  CommandApi.Option("AxesXAxisCross2", 0)
+  CommandApi.Option("AxesXAxisLabelBeg", 0)
+  CommandApi.Option("AxesXAxisLabelEnd", 2)
+  CommandApi.Option("AxesXAxisLabelInc", 0.05)
+  CommandApi.Option("AxesXAxisShow", "True")
+  CommandApi.Option("AxesXAxisLabelAngle", -90)
+  'Y-axis
+  CommandApi.Option("AxesYAxisBeg","0")
+  CommandApi.Option("AxesYAxisEnd","3.2")
+  CommandApi.Option("AxesYAxisCross1", "0")
+  CommandApi.Option("AxesYAxisCross2", "0")
+  CommandApi.Option("AxesYAxisLabelBeg", "0")
+  CommandApi.Option("AxesYAxisLabelEnd", 3.2)
+  CommandApi.Option("AxesYAxisLabelInc", "0.05")
+  CommandApi.Option("AxesYAxisShow", "True")
+  'Z-axis
+  CommandApi.Option("AxesXAxisShow", "False")
+  'Grid
+  CommandApi.Option ("AxesShowGrid", "True")
+  CommandApi.Option ("AxesGridColor", "Khaki")
+  CommandApi.Option ("AxesGridLineWidth", "0.05")
+  CommandApi.Do()
+
+  			  'Move Axis module box
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","Axes")
+			  CommandApi.Option ("XPosition", "400")
+			  CommandApi.Option ("YPosition", "30")
+			  CommandApi.Do()
+
+
+  Dim i%
+  i = 0
+  Dim xPos%
+  Dim yPos%
+  yPos = 100
+  Dim Iteration()
+  Iteration = Array("1", "2", "3", "4", "5", "6", "7", "8")
+
+While i < 8
+	  xPos = 20
+
+	  'Show the data for the point source
+	  CommandApi.Construct ("ModifyModule")
+	  CommandApi.Option ("PointsSrcShowData", "True")
+	  CommandApi.Do()
+
+	 'Add an Exclusion Filter module to cut off extra points in x-direction
+	  CommandApi.Construct ("CreateModule")
+	  CommandApi.Option ("Type", "ExclusionFilter")
+	  CommandApi.Option ("AutoConnect", "True")
+	  CommandApi.Option ("SourceModule",  Fname)
+	  CommandApi.Do()
+
+			 'Rename Exclusion Filter
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","ExclusionFilter")
+			  CommandApi.Option ("Name", "XCut"+Iteration(i))
+			  CommandApi.Do()
+
+			  'Move Exclusion Filter
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","XCut"+Iteration(i))
+			  CommandApi.Option ("XPosition", xPos)
+			  CommandApi.Option ("YPosition", yPos)
+			  CommandApi.Do()
+
+			  xPos = xPos + 80
+
+			 'Remove points on either side of circle of plants
+			  CommandApi.Construct ("ModifyModule")
+			  CommandApi.Option ("Module", "XCut"+Iteration(i))
+			  CommandApi.Option ("ExclusionFilterExpr", "X > "+PlantXLoc(i)+" + 0.375 OR X < "+PlantXLoc(i)+" - 0.375")
+			  CommandApi.Do()
+
+	 'Add an Exclusion Filter module to cut off points in sphere in y-direction
+	  CommandApi.Construct ("CreateModule")
+	  CommandApi.Option ("Type", "ExclusionFilter")
+	  CommandApi.Option ("AutoConnect", "True")
+	  CommandApi.Option ("SourceModule", "XCut"+Iteration(i))
+	  CommandApi.Do()
+
+			 'Rename Exclusion Filter
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","ExclusionFilter")
+			  CommandApi.Option ("Name", "YCut"+Iteration(i))
+			  CommandApi.Do()
+
+			  'Move Exclusion Filter
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","YCut"+Iteration(i))
+			  CommandApi.Option ("XPosition", xPos)
+			  CommandApi.Option ("YPosition", yPos)
+			  CommandApi.Do()
+
+			  xPos = xPos + 80
+
+			 'Remove points around circle of plants
+			  CommandApi.Construct ("ModifyModule")
+			  CommandApi.Option ("Module",  "YCut"+Iteration(i))
+			  CommandApi.Option ("ExclusionFilterExpr", "(y > sqrt("+rSquared+" - pow(x-"+PlantXLoc(i)+", 2) ) +"+PlantYLoc(i)+") OR (y < -sqrt("+rSquared+" - pow(x-"+PlantXLoc(i)+", 2) ) +"+PlantYLoc(i)+")")
+			  CommandApi.Do()
+
+	 'Add an Exclusion Filter module to cut off extra points in z-direction
+	  CommandApi.Construct ("CreateModule")
+	  CommandApi.Option ("Type", "ExclusionFilter")
+	  CommandApi.Option ("AutoConnect", "True")
+	  CommandApi.Option ("SourceModule", "YCut"+Iteration(i))
+	  CommandApi.Do()
+
+			 'Rename Exclusion Filter
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","ExclusionFilter")
+			  CommandApi.Option ("Name", "ZCut"+Iteration(i))
+			  CommandApi.Do()
+
+			  'Move Exclusion Filter
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","ZCut"+Iteration(i))
+			  CommandApi.Option ("XPosition", xPos)
+			  CommandApi.Option ("YPosition", yPos)
+			  CommandApi.Do()
+
+			  xPos = xPos + 80
+
+			 'Remove points beneath a circle around plants
+			  CommandApi.Construct ("ModifyModule")
+			  CommandApi.Option ("Module", "ZCut"+Iteration(i))
+			  CommandApi.Option ("ExclusionFilterExpr", "z <-sqrt("+rSquared+" - pow(x - "+PlantXLoc(i)+", 2) ) - "+rSquared+" Or z <-sqrt( "+rSquared+" - pow(y - "+PlantYLoc(i)+", 2) ) - "+rSquared+"")
+			  CommandApi.Do()
+
+
+	 'Attach a scatter plot to the Exclusion filter
+	  CommandApi.Construct ("CreateModule")
+	  CommandApi.Option ("Type", "ScatterPlot")
+	  CommandApi.Option ("AutoConnect", "True")
+	  CommandApi.Option ("SourceModule", "ZCut"+Iteration(i))
+	  CommandApi.Do()
+
+			 'Rename Scatter Plot
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","ScatterPlot")
+			  CommandApi.Option ("Name", "PlantPlot"+Iteration(i))
+			  CommandApi.Do()
+
+			  'Move Scatter Plot Module
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","PlantPlot"+Iteration(i))
+			  CommandApi.Option ("XPosition", xPos)
+			  CommandApi.Option ("YPosition", yPos)
+			  CommandApi.Do()
+
+			  xPos = xPos + 120
+
+     'Attach a Gridder
+	  CommandApi.Construct ("CreateModule")
+	  CommandApi.Option ("Type", "Gridder")
+	  CommandApi.Option ("AutoConnect", "True")
+	  CommandApi.Option ("SourceModule", "ZCut"+Iteration(i))
+	  CommandApi.Do()
+
+			 'Rename Gridder
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","Gridder")
+			  CommandApi.Option ("Name", "PGrid"+Iteration(i))
+			  CommandApi.Do()
+
+			  'Move Gridder
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","PGrid"+Iteration(i))
+			  CommandApi.Option ("XPosition", xPos)
+			  CommandApi.Option ("YPosition", yPos)
+			  CommandApi.Do()
+
+			  xPos = xPos + 80
+
+     'Attach Isosurface
+	  CommandApi.Construct ("CreateModule")
+	  CommandApi.Option ("Type", "Isosurface")
+	  CommandApi.Option ("AutoConnect", "True")
+	  CommandApi.Option ("SourceModule", "PGrid"+Iteration(i))
+	  CommandApi.Do()
+
+			 'Rename Isosurface
+			  CommandApi.Construct ("RenameModule")
+			  CommandApi.Option ("Module","Isosurface")
+			  CommandApi.Option ("Name", "Iso"+Iteration(i))
+			  CommandApi.Do()
+
+			  'Move Scatter Plot Module
+			  CommandApi.Construct ("MoveModule")
+			  CommandApi.Option ("Module","Iso"+Iteration(i))
+			  CommandApi.Option ("XPosition", xPos)
+			  CommandApi.Option ("YPosition", yPos)
+			  CommandApi.Do()
+
+yPos = yPos + 30
+i = i + 1
+Wend
+
+
+End Sub
