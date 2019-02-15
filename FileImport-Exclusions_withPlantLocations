@@ -24,24 +24,29 @@ Sub Main
   CommandApi.DoOnce()
 
   Dim Fpath$
-  Fpath = "\\isgs-sinkhole\geophysics\cassava\2018\Run3_Sept17-19\ProcessedData\FinalFiles\" 'File path here
   Dim Fname$
   Dim Pname$
   Dim rSqaured$
   'Dim PlantLocs(3,7)$
   Dim PlantXLoc()
   Dim PlantYLoc()
+  Dim Plot$
+  Dim Radius$
 
-'****************************************************
-'*****RENAME THESE VARIABLES***********
-  Fname = "19b3_3D_trim_depth.txt" 'File name here
-  Pname = "19b3_XY.txt" 'File name for plant location file
-  PlantXLoc = Array("1.234","1.234","1.242","1.244","0.579","0.618","0.594","0.594")
-  PlantYLoc = Array("2.773","2.146","1.465","0.815","0.85","1.529","2.183","2.851")
-'******ADJUST AS NEEDED********************
-   rSquared = "0.15" ' Make a circle just over 0.75m radius, or distance b/w plants (0.14 is exact, but 0.15 allows X-Cut to work
-'****************************************************
-'****************************************************
+'*******************************************************************************
+'********************************RENAME THESE VARIABLES***********
+  Fpath = "...\ProcessedData\FinalFiles\" 'Filepath for all the files (they should be in a single folder)
+  Plot = "24w2" 'type plot number in quotes here
+  PlantXLoc = Array("1.322","1.388","1.399","1.355","0.544","0.533","0.528","0.533")
+  PlantYLoc = Array("2.798","2.108","1.597","0.875","0.88","1.499","2.151","2.787")
+'*********************************ADJUST AS NEEDED********************
+   rSquared = "0.09" ' Make a circle just over 0.75m radius, or distance b/w plants (0.14 is exact, but 0.15 allows X-Cut to work
+   Radius = "0.29"
+'********************************************************************************
+'********************************************************************************
+  Fname = ""+Plot+"_3D_trim_depth.txt" 'The data file should be located in the same folder as the XYZ plant location folder. The file name should be as shown here.
+  Pname = ""+Plot+"_XY.txt" 'The data file that has XYZ data for the plant locations
+
 
  'Load the data file
   CommandApi.Construct("Import")
@@ -77,6 +82,31 @@ Sub Main
 			  CommandApi.Option ("XPosition", "200")
 			  CommandApi.Option ("YPosition", "40")
 			  CommandApi.Do()
+
+			'Create X Clip Plane
+			 CommandApi.Construct("CreateModule")
+			 CommandApi.Option("SourceModule", "AllDataPlot")
+			 CommandApi.Option("Type", "ClipPlane")
+			 CommandApi.Do()
+
+						'Rename X Clip Plane
+			 			  CommandApi.Construct("RenameModule")
+						  CommandApi.Option ("Module","ClipPlane")
+						  CommandApi.Option ("Name", "ClipX")
+						  CommandApi.Do()
+
+			'Create Z Clip Plane
+			 CommandApi.Construct("CreateModule")
+			 CommandApi.Option("SourceModule", "ClipX")
+			 CommandApi.Option("Type", "ClipPlane")
+			 CommandApi.Do()
+
+						'Rename X Clip Plane
+			 			  CommandApi.Construct("RenameModule")
+						  CommandApi.Option ("Module","ClipPlane")
+						  CommandApi.Option ("Name", "ClipZ")
+						  CommandApi.Do()
+
 
  'Load the plant location file
   CommandApi.Construct("Import")
@@ -203,7 +233,7 @@ While i < 8
 			 'Remove points on either side of circle of plants
 			  CommandApi.Construct ("ModifyModule")
 			  CommandApi.Option ("Module", "XCut"+Iteration(i))
-			  CommandApi.Option ("ExclusionFilterExpr", "X > "+PlantXLoc(i)+" + 0.375 OR X < "+PlantXLoc(i)+" - 0.375")
+			  CommandApi.Option ("ExclusionFilterExpr", "X > "+PlantXLoc(i)+" +"+Radius+"Or X < "+PlantXLoc(i)+" - "+Radius+"")
 			  CommandApi.Do()
 
 	 'Add an Exclusion Filter module to cut off points in sphere in y-direction
